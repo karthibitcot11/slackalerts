@@ -19,7 +19,7 @@ jobs:
           node-version: 16.x
 
       - name: Install Dependencies
-        run: npm install
+        run: ntm install
 
       - name: Test Project
         run: npm test || echo "Tests not defined, continuing..."
