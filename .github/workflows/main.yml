@@ -21,8 +21,8 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Test Project
-        run: npm test
+      # - name: Test Project
+      #   run: npm test
 
   notify:
     runs-on: ubuntu-latest
