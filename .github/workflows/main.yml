@@ -5,7 +5,7 @@ on:
     branches: [master]
     types: [opened, synchronize, closed, review_requested, review_submitted]
   push:
-    branches: [main]
+    branches: [*]
 
 jobs:
   wait-for-approval:
