@@ -1,37 +1,23 @@
-
 name: CICD
 
 on:
   pull_request:
-    types: [closed]
     branches: [master]
-  pull_request_review:
-    types: [submitted]  # #Runs when a PR review is submitted
+    types: [opened, synchronize, closed, review_requested, review_submitted]
+  push:
+    branches: [main]
 
 jobs:
-  check-approval:
+  wait-for-approval:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
-      - name: Check if PR is Approved
-        id: approval
-        run: |
-          APPROVALS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews" \
-          | jq '[.[] | select(.state=="APPROVED")] | length')
-          
-          if [[ "$APPROVALS" -gt 0 ]]; then
-            echo "PR approved"
-            echo "approved=true" >> $GITHUB_ENV
-          else
-            echo "PR not approved, skipping build."
-            echo "approved=false" >> $GITHUB_ENV
-          fi
+      - name: Wait for PR Approval
+        uses: hmarr/auto-approve-action@v3
 
   build:
     runs-on: ubuntu-latest
-    needs: check-approval
-    if: github.event.pull_request.merged == true && needs.check-approval.outputs.approved == 'true'
-    
+    needs: wait-for-approval
     steps:
       - name: Checkout Source
         uses: actions/checkout@v3
@@ -51,7 +37,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: always()  # Runs regardless of build success or failure
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -79,4 +64,5 @@ jobs:
             *Repo Action URL:* <${{ env.REPO_URL }}|GitHub Actions>
             *Message:* `${{ env.COMMIT_MESSAGE }}`
             *Build Status:* `${{ needs.build.result }}`
+            *PR Status:* Approved ✅
           SLACK_FOOTER: "Powered By rtCamp's GitHub Actions Library"
