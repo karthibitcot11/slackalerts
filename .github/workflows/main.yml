@@ -19,7 +19,7 @@ jobs:
           node-version: 16.x
 
       - name: Install Dependencies
-        run: npm install  # Fixed typo
+        run: nptm install  # Fixed typo
 
       - name: Test Project
         run: npm test || echo "Tests not defined, continuing..."
