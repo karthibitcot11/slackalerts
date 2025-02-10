@@ -1,9 +1,9 @@
 name: CICD
 
 on:
-  pull_request:
-    branches: [master]
-    types: [opened, synchronize, closed, review_requested, review_submitted]
+  # pull_request:
+  #   branches: [master]
+  #   types: [opened, synchronize, closed, review_requested, review_submitted]
   push:
     branches: [main]
 
