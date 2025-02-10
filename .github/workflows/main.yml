@@ -1,4 +1,5 @@
 name: CICD
+
 on:
   push:
     branches: [main]
@@ -6,7 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    needs: check-merge
     steps:
       - name: Checkout Source
         uses: actions/checkout@v3
@@ -53,7 +53,7 @@ jobs:
           SLACK_USERNAME: "rtBot"
           SLACK_COLOR: "${{ needs.build.result == 'success' && 'good' || 'danger' }}"
           SLACK_MESSAGE: |
-            *${{ github.actor }}* merged a PR into master.
+            *${{ github.actor }}* pushed new code.
             *Preview URL:* <${{ env.PREVIEW_URL }}|Preview>
             *Branch Preview URL:* <${{ env.BRANCH_PREVIEW_URL }}|Branch Preview>
             *Ref:* `${{ github.ref }}`
