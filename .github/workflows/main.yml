@@ -1,24 +1,31 @@
 name: CICD
-
 on:
   push:
-    branches-ignore: [master]  # Ignore direct pushes to master; enforce PR approvals
-  pull_request:
-    branches: [master]
-    types: [opened, synchronize, review_requested, review_submitted]
+    branches: [main]
 
 jobs:
-  wait-for-approval:
-    runs-on: ubuntu-latest
-    if: github.event.pull_request && github.event_name == 'pull_request'
-    steps:
-      - name: Wait for PR Approval
-        uses: hmarr/auto-approve-action@v3
+
+# on:
+#   pull_request:
+#     types:
+#       - closed  # Triggers when a PR is merged
+#     branches:
+#       - master
+
+# jobs:
+#   check-merge:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Verify PR Merge
+#         run: |
+#           if [ "${{ github.event.pull_request.merged }}" != "true" ]; then
+#             echo "PR not merged, exiting."
+#             exit 1
+#           fi
 
   build:
     runs-on: ubuntu-latest
-    needs: [wait-for-approval]  # Ensures approval before running for PRs
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master' 
+    needs: check-merge
     steps:
       - name: Checkout Source
         uses: actions/checkout@v3
@@ -34,10 +41,19 @@ jobs:
       - name: Test Project
         run: npm test || echo "Tests not defined, continuing..."
 
-  notify:
+  generate-preview-urls:
     runs-on: ubuntu-latest
     needs: build
-    if: always()  # Ensures notification runs regardless of build success/failure
+    steps:
+      - name: Generate Preview URLs
+        run: |
+          echo "PREVIEW_URL=https://preview-${{ github.run_id }}.example.com" >> $GITHUB_ENV
+          echo "BRANCH_PREVIEW_URL=https://${{ github.head_ref }}.example.com" >> $GITHUB_ENV
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: generate-preview-urls
+    if: always()
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -47,7 +63,6 @@ jobs:
           echo "COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
           echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
           echo "REPO_URL=https://github.com/${GITHUB_REPOSITORY}/actions" >> $GITHUB_ENV
-          echo "SITE_URL=test-gh-actions.dev5.rt.gw" >> $GITHUB_ENV
           echo "SSH_HOST=www-data@dev5.rt.gw" >> $GITHUB_ENV
 
       - name: Send Slack Notification
@@ -57,8 +72,9 @@ jobs:
           SLACK_USERNAME: "rtBot"
           SLACK_COLOR: "${{ needs.build.result == 'success' && 'good' || 'danger' }}"
           SLACK_MESSAGE: |
-            *${{ github.actor }}* pushed new code.
-            *Site:* <${{ env.SITE_URL }}|test-gh-actions.dev5.rt.gw>
+            *${{ github.actor }}* merged a PR into master.
+            *Preview URL:* <${{ env.PREVIEW_URL }}|Preview>
+            *Branch Preview URL:* <${{ env.BRANCH_PREVIEW_URL }}|Branch Preview>
             *Ref:* `${{ github.ref }}`
             *SSH Host:* `${{ env.SSH_HOST }}`
             *Event:* `${{ github.event_name }}`
